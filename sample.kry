@@ -1,0 +1,36 @@
+-- This is a comment.
+
+-- Equivalence of Types:
+
+--- Contractible Type
+isContr: Type -> Type
+isContr X = (x:X) # (y:X) -> (x ==[X] y)
+
+--- Homotopy Fiber
+hfiber: (A:Type) -> (A -> B) -> B -> Type
+hfiber A f b = (a:A) # ((f a) ==[B] b)
+
+--- Function is Equivalence
+isEquiv: (A:Type) -> (B:Type) -> (A -> B) -> Type
+isEquiv A B f = (b:B) -> isContr $ hfiber A f b
+
+--- Type of Equivalences
+-- _ ~= _: Type -> Type -> Type
+-- (A ~= B) = (f: A -> B) # isEquiv A B f
+
+
+-- Equivalence is Reflexive:
+-- idEquiv: (A:Type) -> (A ~= A)
+-- idEquiv A = (  \(a:A) -> a,  \(a:A) -> ((a, <i> a), equatePair a)  )
+--   where equatePair a (a', p) = <i> (p@i, <j> p@(i & j))
+
+
+-- Equivalence is Symmetric:
+-- symEquiv: (A ~= B) -> (B ~= A)
+-- symEquiv (f, contrMap) =
+--   (
+--     invContrMap,
+--
+--     \(a:A) -> (  (f a, <i> a), \(F': hfiber B invContrMap a) -> <i> ( ???, <j> F'.2 @ (j | ~i))  )
+--   )
+--     where invContrMap = \(b:B) -> (contrMap b).1.1

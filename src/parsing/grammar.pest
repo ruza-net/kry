@@ -1,0 +1,190 @@
+// Literals
+//
+_ident = { "_" ~ ASCII_ALPHANUMERIC ~ ("_" | ASCII_ALPHANUMERIC)* ~ "'"* }
+ident = { ASCII_ALPHA ~ ("_" | ASCII_ALPHANUMERIC)* ~ "'"* }
+
+identifier = @{ _ident | ident }
+
+
+operator_char = { "=" | "|" | "&" | "^" | ">" | "<" | "~" | "+" | "-" | "*" | "/" | ";" | "?" | "!" }
+operator = @{ operator_char ~ operator_char+ }
+
+
+number = @{ ASCII_DIGIT+ }
+//[END]
+
+
+// Dimension Expressions
+//
+dim_inverted = { "~" ~ dim_expr_compact }
+dim_min = { dim_expr_compact ~ "&" ~ dim_expr_compact }
+dim_max = { dim_expr_compact ~ "|" ~ dim_expr_compact }
+
+dim_one = { "1i" }
+dim_zero = { "0i" }
+
+dim_expr_compact = {
+    identifier
+  | dim_inverted
+
+  | dim_one
+  | dim_zero
+
+  | "(" ~ dim_expr ~ ")"
+}
+
+dim_expr = {
+    dim_min
+  | dim_max
+
+  | dim_expr_compact
+}
+//[END]
+
+
+// Type Expressions
+//
+dependent_head = { type_expr_compact | "(" ~ term_bind ~ ")" }
+
+either_type = { type_expr_compact ~ "|" ~ type_expr }
+pair_type = { dependent_head ~ "#" ~ type_expr }
+function_type = { dependent_head ~ "->" ~ type_expr }
+
+path_type = { term_expr_compact ~ "==[" ~ type_expr ~ "]" ~ term_expr }
+
+unit_type = { "1t" }
+zero_type = { "0t" }
+
+type_expr = {
+    function_type
+  | pair_type
+  | either_type
+
+  | path_type
+  | function_reduction
+  | identifier
+
+  | unit_type
+  | zero_type
+
+  | "(" ~ type_expr ~ ")"
+}
+
+type_expr_compact = {
+    identifier
+
+  | unit_type
+  | zero_type
+
+  | "(" ~ type_expr ~ ")"
+}
+//[END]
+
+
+// Term Expressions
+//
+term_bind = { term_eliminator ~ ":" ~ type_expr }
+term_def = { (function_reduction_eliminator | term_eliminator) ~ "=" ~ term_expr }
+
+lambda_arg = { "(" ~ term_bind ~ ")" | atom_term_eliminator }
+
+unit_term = { "()" }
+
+
+lambda_eliminator = { "\\" ~ lambda_arg ~ "->" ~ term_eliminator }
+pair_eliminator = { "(" ~ term_eliminator ~ ("," ~ term_eliminator)+ ~ ")" }
+
+function_reduction_eliminator = { atom_expr_init ~ atom_term_eliminator+ }
+
+term_eliminator = {
+    lambda_eliminator
+
+  | atom_term_eliminator
+}
+
+atom_term_eliminator = {
+    pair_eliminator
+  | unit_term
+
+  | identifier
+
+  | "(" ~ term_eliminator ~ ")"
+}
+
+
+function_reduction_compact = { atom_expr_init ~ atom_expr+ }
+function_reduction = {
+    function_reduction_compact ~ ("$" ~ term_expr)?
+  | atom_expr_init ~ "$" ~ term_expr
+}
+
+path_reduction = { atom_expr_init ~ "@" ~ dim_expr_compact }
+pair_reduction = { atom_expr_simple ~ ("." ~ number)+ }
+
+lambda_expr = { "\\" ~ lambda_arg ~ "->" ~ term_expr}
+path_expr = { "<" ~ identifier ~ ">" ~ term_expr }
+pair_expr = { "(" ~ term_expr ~ ("," ~ term_expr)+ ~ ")" }
+//inl_expr = { "inl " ~ }
+
+term_expr = {
+    function_reduction
+  | path_reduction
+  | pair_reduction
+
+  | identifier
+  | unit_term
+
+  | lambda_expr
+  | path_expr
+  | pair_expr
+
+  | type_expr
+
+  | "(" ~ term_expr ~ ")"
+}
+
+term_expr_compact = {
+    function_reduction_compact
+  | path_reduction
+  | pair_reduction
+  | identifier
+
+  | type_expr_compact
+
+  | "(" ~ term_expr ~ ")"
+}
+
+atom_expr_simple = {
+    identifier
+  | pair_expr
+  | "(" ~ term_expr ~ ")"
+}
+
+atom_expr_init = {
+    identifier
+  | pair_reduction
+  | "(" ~ term_expr ~ ")"
+}
+
+atom_expr = {
+    pair_expr
+  | atom_expr_init
+}
+//[END]
+
+
+// Grammar Root
+//
+where_clause = { "where" ~ ("\n"+ ~ ".." ~ (term_bind | term_def))* }
+
+line = { (term_bind | term_def) ~ ("\n"+ ~ where_clause)? }
+
+root = { SOI ~ ( line? ~ "\n" )* ~ EOI }
+//[END]
+
+
+// Latent Rules
+//
+WHITESPACE = _{ " " | "\t" }
+COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
+//[END]
