@@ -1,7 +1,7 @@
 use std::fmt;
 use std::error::Error;
 
-use crate::parsing::ast::{ Expression, Type };
+use crate::parsing::ast::{ Expr, Type };
 
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ pub enum TypeError {
     NotDeclared(String),
     NotDefined(String),
 
-    TypesDoNotMatch(Expression, Type),
+    TypesDoNotMatch(Expr, Type),
 }
 
 impl fmt::Display for TypeError {
